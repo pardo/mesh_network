@@ -1,6 +1,6 @@
 # mesh network
 
-example using firebase as a broker and SimplePeer to do a mesh network 
+Example using firebase as a broker and SimplePeer to do a mesh network  
 
 `npm i`  
 `npm run build`  
