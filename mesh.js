@@ -70,12 +70,12 @@ function MeshTest () {
   }
 
   this.log = function () {
-    if (!this.mesh.connected) { return }
     let data = ''
     data += `<div>My ID: ${this.myName} ${this.mesh.id}</div>`
     for (const key in this.mesh.connections) {
-      const name = this.names[key] || key
-      data += `<div>${name} = ${this.mesh.connections[key].connected}</div>`
+      const networking = this.mesh.connections[key]
+      const name = this.names[networking.participantId] || networking.participantId
+      data += `<div>${name} (${networking.lag}) = ${networking.connected}</div>`
     }
     document.getElementById('connections').innerHTML = data
   }
@@ -83,7 +83,9 @@ function MeshTest () {
   this.attachEvents = function () {
     this.mesh.on('connected', (data) => {
       // another one connected
-      this.mesh.whisperEvent(data.participantId, 'name', this.myName)
+      setTimeout(() => {
+        this.mesh.whisperEvent(data.participantId, 'name', this.myName)
+      }, 1000)
     })
 
     this.mesh.on('network_name', (participantId, name) => {
@@ -104,10 +106,10 @@ function MeshTest () {
     if (!element) {
       element = document.createElement('div')
       element.className = 'mouse'
-      element.innerText = this.names[participantId]
       element.id = participantId
       document.getElementById('square').appendChild(element)
     }
+    element.innerText = this.names[participantId]
     element.style.left = `${x}px`
     element.style.top = `${y}px`
   }

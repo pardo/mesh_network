@@ -60,6 +60,7 @@ function Networking () {
     this.hostingSignalOffer = null
     this.sendSignalIntervalId = null
     this.events = new EventTarget()
+    this.lag = 0
   }
 
   this.on = function (type, callback) {
@@ -205,8 +206,8 @@ function Mesh () {
     // by "id_id" where id is my id  and the other id
     // id_id will be sorted so the one initiating the peer will be the first id
     setInterval(() => {
-      this.broadcastEvent('heartbeat', `Love ${this.id}`)
-    }, 10000)
+      this.broadcastEvent('ping', (new Date()).toISOString())
+    }, 1000)
   }
 
   this.attachCallbacksToNewPeer = function (networking) {
@@ -246,8 +247,11 @@ function Mesh () {
   }
 
   this.attachNetworkingEvents = function (participantId, key, networking) {
-    networking.on('network_heartbeat', (data) => {
-      console.log(data)
+    networking.on('network_ping', (data) => {
+      networking.sendEvent('pong', data)
+    })
+    networking.on('network_pong', (data) => {
+      networking.lag = (new Date()) - (new Date(data))
     })
 
     networking.on('connected', (data) => {
