@@ -1,19 +1,24 @@
 {
   "version": "1.0.0",
   "scripts": {
-    "build": "rm -R docs && mkdir docs && parcel build -d docs --public-url https://pardo.github.io/mesh_network/ index.html",
-    "serve": "parcel serve --no-autoinstall index.html",
+    "build": "rm -R docs && mkdir docs && parcel build --dist-dir docs --public-url https://pardo.github.io/mesh_network/ index.html",
+    "serve": "parcel serve index.html",
     "test": "standard --fix *.js",
     "ncu": "ncu"
   },
   "dependencies": {
-    "firebase": "^7.15.0",
-    "simple-peer": "^9.7.2"
+    "firebase": "^9.8.0",
+    "simple-peer": "^9.11.1"
   },
   "devDependencies": {
+    "events": "^3.3.0",
     "npm-check-updates": "^6.0.1",
-    "parcel-bundler": "^1.12.4",
-    "parcel-plugin-bundle-visualiser": "^1.2.0",
+    "parcel": "^2.0.0",
+    "process": "^0.11.10",
     "standard": "^14.3.4"
-  }
+  },
+  "engines": {
+    "node": "16.14.2"
+  },
+  "browserslist": "> 0.5%, last 2 versions, not dead"
 }

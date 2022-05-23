@@ -1,7 +1,9 @@
 import EventTarget from './simple-events'
-import * as firebase from 'firebase/app'
 import Peer from 'simple-peer'
-import 'firebase/database'
+
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, set, onValue, off, get } from "firebase/database";
+
 
 const config = JSON.parse(window.atob([
   'eyJhcGlLZXkiOiJBSXphU3lDeVgtcTFFNH',
@@ -16,8 +18,8 @@ const config = JSON.parse(window.atob([
   'VuZGVySWQiOiIxMDE1NDIyNDAzMzUzIn0'
 ].join('')))
 
-firebase.initializeApp(config)
-const firebaseDatabase = firebase.database()
+const app = initializeApp(config)
+const firebaseDatabase = getDatabase(app)
 
 function uuidv4 () {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
@@ -73,7 +75,7 @@ function Networking () {
       if (this.connected) {
         clearInterval(this.sendSignalIntervalId)
       }
-      this.databaseRef.set(JSON.stringify(this.hostingSignalOffer))
+      set(this.databaseRef, JSON.stringify(this.hostingSignalOffer))
     }, 4000)
   }
 
@@ -85,7 +87,7 @@ function Networking () {
     this.connected = false
     this.peerOfferSent = false
     this.peerAnswerSent = false
-    if (this.databaseRef) { this.databaseRef.off('value') }
+    if (this.databaseRef) { off(this.databaseRef) }
     this.peer.destroy()
   }
 
@@ -110,8 +112,8 @@ function Networking () {
   }
 
   this.connectFirebaseDatabase = function (name) {
-    this.databaseRef = firebaseDatabase.ref('peer-' + name)
-    this.databaseRef.on('value', snapshot => {
+    this.databaseRef = ref(firebaseDatabase, 'peer-' + name)
+    onValue(this.databaseRef, snapshot => {
       this.handleFirebaseUpdate(snapshot)
     })
   }
@@ -150,10 +152,10 @@ function Networking () {
         // store the initial offering to re-send if the client misses the first one
         this.hostingSignalOffer = data
       }
-      this.databaseRef.set(JSON.stringify(data))
+      set(this.databaseRef, JSON.stringify(data))
     })
     this.peer.on('connect', () => {
-      this.databaseRef.set('')
+      set(this.databaseRef, '')
       this.connectedToServer()
     })
     this.peer.on('data', (data) => {
@@ -167,9 +169,9 @@ function Networking () {
     this.hosting = true
     this.peerLinkName = name
     this.events.fire('pre-connection')
-    if (this.databaseRef) { this.databaseRef.off('value') }
+    if (this.databaseRef) { off(this.databaseRef) }
     this.connectFirebaseDatabase(this.peerLinkName)
-    this.databaseRef.set('')
+    set(this.databaseRef, '')
     this.peer = new Peer({ initiator: true, trickle: false })
     this.attachPeerEvents(this.peer)
     this.sendSignalInterval()
@@ -181,12 +183,12 @@ function Networking () {
     this.joining = true
     this.peerLinkName = name
     this.events.fire('pre-connection')
-    if (this.databaseRef) { this.databaseRef.off('value') }
+    if (this.databaseRef) { off(this.databaseRef) }
     this.connectFirebaseDatabase(this.peerLinkName)
     this.peer = new Peer({ initiator: false, trickle: false })
     this.attachPeerEvents(this.peer)
     // client will read the value already present in the store
-    this.databaseRef.ref.once('value').then(snapshot => {
+    get(this.databaseRef).then(snapshot => {
       this.handleFirebaseUpdate(snapshot)
     })
   }
@@ -243,7 +245,7 @@ function Mesh () {
 
   this.sendPresence = function () {
     if (!this.myRoomRef) { return }
-    this.myRoomRef.set(parseInt((new Date()).getTime() / 1000))
+    set(this.myRoomRef, parseInt((new Date()).getTime() / 1000))
   }
 
   this.attachNetworkingEvents = function (participantId, key, networking) {
@@ -325,20 +327,20 @@ function Mesh () {
 
   this.disconnectRoom = function () {
     if (this.myRoomRef) {
-      this.myRoomRef.off('value')
+      off(this.myRoomRef)
     }
     if (this.roomRef) {
-      this.roomRef.off('value')
+      off(this.roomRef)
     }
   }
 
   this.joinRoom = function (name) {
     this.disconnectRoom()
     this.roomName = name
-    this.myRoomRef = firebaseDatabase.ref(`room/${this.roomName}/${this.id}`)
-    this.roomRef = firebaseDatabase.ref(`room/${this.roomName}`)
-    this.roomRef.set('sync')
-    this.roomRef.on('value', snapshot => {
+    this.myRoomRef = ref(firebaseDatabase, `room/${this.roomName}/${this.id}`)
+    this.roomRef = ref(firebaseDatabase, `room/${this.roomName}`)
+    set(this.roomRef, 'sync')
+    onValue(this.roomRef, snapshot => {
       this.roomUpdate(snapshot.val() || {})
     })
   }
